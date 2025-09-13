@@ -1,0 +1,17 @@
+SplashKit Animation
+
+// Pacman animation - 7 frames horizontally
+f: [0-3], [0-3], 5, 0
+f: [4-7], [4-7], 5, 4
+f: [8-11], [8-11], 5, 8
+f: [12-15], [12-15], 5, 12
+
+// Movement vectors for each direction
+// When animation is at these frames, apply movement
+v: 0, 3, -3
+
+// Animation identifiers with different starting vectors
+i:Right,0
+i:Up,0
+i:Left,0
+i:Down,0
