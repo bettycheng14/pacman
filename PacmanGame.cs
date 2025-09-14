@@ -8,6 +8,7 @@ namespace pacman
         StartScreen,
         Playing,
         GameOver,
+        LevelEditing,
     }
 
     public class PacmanGame
@@ -50,6 +51,7 @@ namespace pacman
         private bool _isMuted = false;
         private Rectangle _muteButton;
         private bool _muteButtonHovered = false;
+        private LevelEditor _levelEditor;
 
         public PacmanGame(Window gameWindow)
         {
@@ -57,7 +59,8 @@ namespace pacman
             {
                 _gameWindow = gameWindow;
                 GameConstants.Initialize();
-
+                // Init the Map
+                _map = new Map();
                 // Load resources
                 // Load background music
                 _backgroundMusic = SplashKit.LoadMusic("background", "backgroundMusic.mp3");
@@ -85,13 +88,12 @@ namespace pacman
                 _muteButton.Width = _soundOnIcon.Width + 3;
                 _muteButton.Height = _soundOnIcon.Height + 3;
                 _muteButton.X = _muteButton.Width;
-                _muteButton.Y = GameConstants.Map.GetLength(0) * GameConstants.ONE_BLOCK_SIZE;
+                _muteButton.Y = _map.Rows * GameConstants.ONE_BLOCK_SIZE;
 
                 CreateNewPacman();
                 CreateGhosts();
-                // Init the Map
-                _map = new Map();
 
+                _levelEditor = new LevelEditor(_map); // Initialize the editor with the map
                 // Start playing music
                 PlayBackgroundMusic();
             }
@@ -109,7 +111,8 @@ namespace pacman
                 GameConstants.ONE_BLOCK_SIZE,
                 GameConstants.ONE_BLOCK_SIZE,
                 GameConstants.ONE_BLOCK_SIZE,
-                GameConstants.ONE_BLOCK_SIZE / 5
+                GameConstants.ONE_BLOCK_SIZE / 5,
+                _map
             );
         }
 
@@ -127,7 +130,8 @@ namespace pacman
                     6 + i,
                     _pacman,
                     _ghostColors[i],
-                    new RandomMovementStrategy()
+                    new RandomMovementStrategy(),
+                    _map
                 );
             }
         }
@@ -200,7 +204,7 @@ namespace pacman
                 _gameFont,
                 20,
                 _gameWindow.Width - 110,
-                GameConstants.Map.GetLength(0) * GameConstants.ONE_BLOCK_SIZE
+                _map.Rows * GameConstants.ONE_BLOCK_SIZE
             );
 
             for (int i = 0; i < _lives; i++)
@@ -208,7 +212,7 @@ namespace pacman
                 Bitmap heart = SplashKit.LoadBitmap("heart", "heart.png");
                 heart.Draw(
                     350 + i * GameConstants.ONE_BLOCK_SIZE,
-                    GameConstants.Map.GetLength(0) * GameConstants.ONE_BLOCK_SIZE + 5
+                    _map.Rows * GameConstants.ONE_BLOCK_SIZE + 5
                 );
             }
         }
@@ -219,9 +223,24 @@ namespace pacman
             {
                 case GameState.StartScreen:
                     HandleStartScreenInput();
+                    // Add a key to enter the editor from the start screen (e.g., E key)
+                    if (SplashKit.KeyTyped(KeyCode.EKey)) _gameState = GameState.LevelEditing;
                     break;
                 case GameState.Playing:
                     HandleGameInput();
+                    // Add a key to enter the editor from the game (e.g., E key)
+                    if (SplashKit.KeyTyped(KeyCode.EKey)) _gameState = GameState.LevelEditing;
+                    break;
+                case GameState.LevelEditing:
+                    _levelEditor.HandleInput();
+                    if (SplashKit.KeyTyped(KeyCode.EscapeKey))
+                        _gameState = GameState.StartScreen;
+                    if (SplashKit.KeyTyped(KeyCode.PKey))
+                    {
+                        _map.IsCustomMap = true;
+                        _gameState = GameState.Playing;
+                        ResetGame(forceOriginalMap: false);
+                    }
                     break;
                 case GameState.GameOver:
                     HandleGameOverInput();
@@ -306,8 +325,8 @@ namespace pacman
             // Check for button click
             if (_buttonHovered && SplashKit.MouseClicked(MouseButton.LeftButton))
             {
-                ResetGame();
-                _gameState = GameState.Playing;
+                ResetGame(forceOriginalMap: true);
+                _gameState = GameState.StartScreen;
             }
         }
 
@@ -316,11 +335,11 @@ namespace pacman
             switch (_gameState)
             {
                 case GameState.StartScreen:
-                    if (!_musicPlaying)
+                    if (!_musicPlaying && !_isMuted)
                         PlayBackgroundMusic();
                     break;
                 case GameState.Playing:
-                    if (!_musicPlaying)
+                    if (!_musicPlaying && !_isMuted)
                         PlayBackgroundMusic();
                     break;
                 case GameState.GameOver:
@@ -432,6 +451,14 @@ namespace pacman
 
             DrawScore();
             DrawRemainingLives();
+            SplashKit.DrawText(
+                "Press Ese: Back to Home Screen",
+                Color.White,
+                _gameFont,
+                18,
+                20,
+                _gameWindow.Height - 25
+            );
         }
 
         private void UpdateGhosts()
@@ -471,6 +498,9 @@ namespace pacman
                     break;
                 case GameState.Playing:
                     DrawGame();
+                    break;
+                case GameState.LevelEditing: // Draw the editor
+                    _levelEditor.Draw();
                     break;
                 case GameState.GameOver:
                     DrawGameOverScreen();
@@ -530,6 +560,16 @@ namespace pacman
                 _startButton.X + 20,
                 _startButton.Y + 10
             );
+
+            // Hint to Editor Mode
+            SplashKit.DrawText(
+                "Press E: Edit Your Own Level!",
+                Color.White,
+                myFont,
+                28,
+                20,
+                _gameWindow.Height - 50
+            );
         }
 
         private void DrawGameOverScreen()
@@ -588,39 +628,30 @@ namespace pacman
 
         private void StartGame()
         {
-            ResetGame();
+            ResetGame(forceOriginalMap: true);
             _gameState = GameState.Playing;
         }
 
-        private void ResetGame()
+        private void ResetGame(bool forceOriginalMap = false)
         {
             _lives = 3;
             _score = 0;
-
-            // Reset map (convert 3s back to 2s)
-            for (int i = 0; i < GameConstants.Map.GetLength(0); i++)
+            if (forceOriginalMap || !_map.IsCustomMap)
             {
-                for (int j = 0; j < GameConstants.Map.GetLength(1); j++)
-                {
-                    if (GameConstants.Map[i, j] == 3)
-                    {
-                        GameConstants.Map[i, j] = 2;
-                    }
-                }
+                _map.Reset();
             }
-            _map.Reset();
             CreateNewPacman();
             CreateGhosts();
         }
 
         private bool CheckWinCondition()
         {
-            // Check if all food is eaten
-            for (int i = 0; i < GameConstants.Map.GetLength(0); i++)
+            // Check if all food is eaten in the CURRENT map
+            for (int i = 0; i < _map.Rows; i++)
             {
-                for (int j = 0; j < GameConstants.Map.GetLength(1); j++)
+                for (int j = 0; j < _map.Cols; j++)
                 {
-                    if (GameConstants.Map[i, j] == 2) // If there's still food
+                    if (_map[i, j] == 2) // Use the current map data
                     {
                         return false;
                     }
@@ -670,7 +701,7 @@ namespace pacman
                 _gameFont,
                 20,
                 50,
-                GameConstants.Map.GetLength(0) * GameConstants.ONE_BLOCK_SIZE
+                _map.Rows * GameConstants.ONE_BLOCK_SIZE
             );
         }
     }

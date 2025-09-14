@@ -5,11 +5,21 @@ namespace pacman
 {
     public class Map
     {
-        private int[,] _layout;
+        public int[,] _layout { get; private set; }
+        public bool IsCustomMap { get; set; }
 
-        public Map()
+        public Map(bool loadFromConstants = true)
         {
-            _layout = (int[,])GameConstants.Map.Clone();
+            if (loadFromConstants)
+            {
+                _layout = (int[,])GameConstants.Map.Clone(); // Just clone directly
+            }
+            else
+            {
+                // Create empty map if not loading from constants
+                _layout = new int[GameConstants.Map.GetLength(0), GameConstants.Map.GetLength(1)];
+            }
+            IsCustomMap = !loadFromConstants;
         }
 
         public int Rows => _layout.GetLength(0);
@@ -19,6 +29,16 @@ namespace pacman
         {
             get => _layout[row, col];
             set => _layout[row, col] = value;
+        }
+
+        public void LoadCustomLayout(int[,] newLayout)
+        {
+            // Simple way to load a custom map array
+            if (newLayout.GetLength(0) == Rows && newLayout.GetLength(1) == Cols)
+            {
+                _layout = newLayout;
+                IsCustomMap = true;
+            }
         }
 
         public void Reset()
@@ -31,6 +51,7 @@ namespace pacman
                     _layout[i, j] = GameConstants.Map[i, j];
                 }
             }
+            IsCustomMap = false;
         }
 
         // Consumes a dot at map cell (row, col).

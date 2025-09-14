@@ -7,7 +7,7 @@ namespace pacman
     {
         public static void Main()
         {
-            Window gameWindow = new Window("Pacman", 420, 500);
+            Window gameWindow = new Window("Pacman", 420, 550);
             PacmanGame game = new PacmanGame(gameWindow);
 
             try

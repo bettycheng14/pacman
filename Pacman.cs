@@ -9,8 +9,8 @@ namespace pacman
         public bool CanEatGhosts { get; private set; }
         private DateTime _powerUpEndTime;
 
-        public Pacman(double x, double y, double width, double height, double speed)
-            : base(x, y, width, height, speed)
+        public Pacman(double x, double y, double width, double height, double speed, Map map)
+            : base(x, y, width, height, speed, map)
         {
             X = x;
             Y = y;
@@ -63,12 +63,12 @@ namespace pacman
         {
             bool isCollided = false;
             if (
-                GameConstants.Map[GetMapY(), GetMapX()] == 1
-                || GameConstants.Map[(int)(Y / GameConstants.ONE_BLOCK_SIZE + 0.9999), GetMapX()]
+                Map[GetMapY(), GetMapX()] == 1
+                || Map[(int)(Y / GameConstants.ONE_BLOCK_SIZE + 0.9999), GetMapX()]
                     == 1
-                || GameConstants.Map[GetMapY(), (int)(X / GameConstants.ONE_BLOCK_SIZE + 0.9999)]
+                || Map[GetMapY(), (int)(X / GameConstants.ONE_BLOCK_SIZE + 0.9999)]
                     == 1
-                || GameConstants.Map[
+                || Map[
                     (int)(Y / GameConstants.ONE_BLOCK_SIZE + 0.9999),
                     (int)(X / GameConstants.ONE_BLOCK_SIZE + 0.9999)
                 ] == 1

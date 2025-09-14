@@ -26,9 +26,10 @@ namespace pacman
             int range,
             Pacman pacman,
             Color ghostColor,
-            IMovementStrategy movementStrategy
+            IMovementStrategy movementStrategy,
+            Map map
         )
-            : base(x, y, width, height, speed)
+            : base(x, y, width, height, speed, map)
         {
             X = x;
             Y = y;
@@ -76,7 +77,7 @@ namespace pacman
                 _movementStrategy = new RandomMovementStrategy();
             }
 
-            Target = _movementStrategy.GetNextTarget(this, _pacman, GameConstants.Map);
+            Target = _movementStrategy.GetNextTarget(this, _pacman, Map._layout);
 
             ChangeDirectionIfPossible();
             MoveForwards();
@@ -107,12 +108,12 @@ namespace pacman
         {
             bool isCollided = false;
             if (
-                GameConstants.Map[GetMapY(), GetMapX()] == 1
-                || GameConstants.Map[(int)(Y / GameConstants.ONE_BLOCK_SIZE + 0.9999), GetMapX()]
+                Map[GetMapY(), GetMapX()] == 1
+                || Map[(int)(Y / GameConstants.ONE_BLOCK_SIZE + 0.9999), GetMapX()]
                     == 1
-                || GameConstants.Map[GetMapY(), (int)(X / GameConstants.ONE_BLOCK_SIZE + 0.9999)]
+                || Map[GetMapY(), (int)(X / GameConstants.ONE_BLOCK_SIZE + 0.9999)]
                     == 1
-                || GameConstants.Map[
+                || Map[
                     (int)(Y / GameConstants.ONE_BLOCK_SIZE + 0.9999),
                     (int)(X / GameConstants.ONE_BLOCK_SIZE + 0.9999)
                 ] == 1
@@ -167,7 +168,7 @@ namespace pacman
 
         public int CalculateNewDirection(int destX, int destY)
         {
-            int[,] mp = (int[,])GameConstants.Map.Clone();
+            int[,] mp = (int[,])Map._layout.Clone();
 
             Queue<PathNode> queue = new Queue<PathNode>();
             queue.Enqueue(
